@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 URL = "https://www.amsat.org/status/"
+ACTIVE_COLOR = "#4169e1"  # royal blue
+TIME_WINDOW_LOOKBACK = 24  # number of 2-hour windows in the last 24 hours (24h / 2h = 12)
 
 # fetch page
 resp = requests.get(URL)
@@ -37,7 +39,7 @@ for row in rows[1:]:  # skip header row
     for c in cols[1:]:
         # Check bgcolor attribute for blue (#4169E1 is royal blue = active)
         bgcolor = c.get("bgcolor", "").lower()
-        has_blue = bgcolor == "#4169e1"
+        has_blue = bgcolor == ACTIVE_COLOR
         
         is_active.append(1 if has_blue else 0)
 
@@ -46,12 +48,11 @@ for row in rows[1:]:  # skip header row
 results = []
 
 for sat, active_list in data:
-    last_24h = sum(active_list[:12])   # first 12 columns = 24 hours (12 × 2-hour windows)
-    results.append((sat, last_24h))
+    activity_sum = sum(active_list[:TIME_WINDOW_LOOKBACK])   # first 12 columns = 24 hours (12 × 2-hour windows)
+    results.append((sat, activity_sum))
 
 # sort by activity (most active first)
 results.sort(key=lambda x: x[1], reverse=True)
 
-df = pd.DataFrame(results, columns=["Satellite", "Active_Windows_24h"])
-
-print(df)
+df = pd.DataFrame(results, columns=["Satellite", "Activity"])
+print(df.head(10))
